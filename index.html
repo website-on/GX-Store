@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GX Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">GX <span>STORE</span></div>
+        <ul class="nav-links">
+            <li><a href="#" onclick="showPage('home')">الرئيسية</a></li>
+            <li><a href="#" onclick="showPage('products')">المنتجات</a></li>
+            <li><a href="#" class="admin-link" onclick="openAdminLogin()">الإدارة <i class="fas fa-lock"></i></a></li>
+        </ul>
+        <div class="cart-icon" onclick="toggleCart()">
+            <i class="fas fa-shopping-cart"></i>
+            <span id="cart-count">0</span>
+        </div>
+    </nav>
+    <!-- Home Page -->
+    <div id="home-page" class="page active">
+        <header class="hero">
+            <div class="hero-content">
+                <h1>مرحباً بك في <span>GX STORE</span></h1>
+                <p>وجهتك الأولى والموثوقة لشحن العملات الرقمية لجميع ألعابك المفضلة (شدات ببجي، جواهر فري فاير،
+                    والمزيد).<br><br> نقدم لك سرعة في التنفيذ، أسعار تنافسية، وضمان كامل لأمان حسابك. انطلق الآن وتفوق
+                    في لعبتك!</p>
+                <button class="cta-btn" onclick="showPage('products')">تصفح المنتجات <i
+                        class="fas fa-gamepad"></i></button>
+            </div>
+            <div class="hero-image">
+                <!-- Image loaded via CSS -->
+            </div>
+        </header>
+        <section class="features">
+            <div class="feature-box">
+                <i class="fas fa-bolt"></i>
+                <h3>سرعة التنفيذ</h3>
+                <p>شحن فوري بمجرد تأكيد الطلب</p>
+            </div>
+            <div class="feature-box">
+                <i class="fas fa-shield-alt"></i>
+                <h3>أمان 100%</h3>
+                <p>حماية تامة لحسابك وبياناتك</p>
+            </div>
+            <div class="feature-box">
+                <i class="fas fa-tags"></i>
+                <h3>أفضل الأسعار</h3>
+                <p>عروض وخصومات حصرية دائماً</p>
+            </div>
+        </section>
+    </div>
+    <!-- Products Page -->
+    <div id="products-page" class="page">
+        <h2 class="section-title">بطاقات <span>الألعاب</span></h2>
+        <div class="products-container" id="products-list">
+            <!-- Products will be injected here via JS -->
+        </div>
+    </div>
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>سلة المشتريات</h3>
+            <button onclick="toggleCart()" class="close-btn">&times;</button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Cart items will be injected here -->
+        </div>
+        <div class="cart-footer">
+            <div class="total">الإجمالي: <span id="cart-total">0</span> $</div>
+            <button class="whatsapp-btn" onclick="checkout()">
+                إتمام الطلب عبر واتساب <i class="fab fa-whatsapp"></i>
+            </button>
+        </div>
+    </div>
+    <div class="overlay" id="overlay" onclick="toggleCart()"></div>
+    <!-- Admin Modal -->
+    <div class="modal" id="admin-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAdminModal()">&times;</span>
+            <div id="admin-login-section">
+                <h3>تسجيل دخول الإدارة</h3>
+                <input type="password" id="admin-password" placeholder="أدخل كلمة المرور">
+                <button onclick="checkAdminPassword()" class="admin-btn">دخول</button>
+                <p id="admin-error" style="color: red; display: none; margin-top: 10px;">كلمة المرور خاطئة!</p>
+            </div>
+
+            <div id="admin-panel-section" style="display: none;">
+                <div class="admin-header">
+                    <h3>لوحة تحكم المنتجات</h3>
+                    <button onclick="logoutAdmin()" class="admin-btn logout-btn-small" title="تسجيل الخروج"><i
+                            class="fas fa-sign-out-alt"></i></button>
+                </div>
+
+                <div class="admin-dashboard">
+                    <!-- Form Section -->
+                    <div class="admin-form-container">
+                        <h4 id="form-title">إضافة منتج جديد</h4>
+                        <form id="product-form" onsubmit="saveProduct(event)">
+                            <input type="hidden" id="product-id">
+
+                            <div class="input-group">
+                                <label>اسم المنتج</label>
+                                <input type="text" id="product-name" placeholder="مثال: 60 شدة ببجي" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label>السعر ($)</label>
+                                <input type="number" id="product-price" placeholder="القيمة بالدولار" step="0.01"
+                                    required>
+                            </div>
+
+                            <div class="input-group">
+                                <label>صورة المنتج</label>
+                                <div class="file-upload-wrapper">
+                                    <input type="file" id="product-image-file" accept="image/*"
+                                        onchange="previewImage(event)">
+                                    <label for="product-image-file" class="file-upload-btn">
+                                        <i class="fas fa-cloud-upload-alt"></i> إختر صورة من الجهاز
+                                    </label>
+                                </div>
+                                <div class="image-preview-container" id="image-preview-container" style="display:none;">
+                                    <img id="image-preview" src="" alt="Preview">
+                                    <button type="button" class="remove-image-btn" onclick="removeImage()">×</button>
+                                </div>
+                                <input type="hidden" id="product-image-base64">
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="admin-btn save-btn" id="save-product-btn">حفظ المنتج <i
+                                        class="fas fa-save"></i></button>
+                                <button type="button" class="admin-btn cancel-btn" id="cancel-edit-btn"
+                                    style="display:none;" onclick="resetForm()">إلغاء</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- List Section -->
+                    <div class="admin-list-container">
+                        <h4>المنتجات الحالية</h4>
+                        <div class="admin-products-list" id="admin-products-list">
+                            <!-- Products will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 GX STORE. جميع الحقوق محفوظة.</p>
+    </footer>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
