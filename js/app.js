@@ -1,31 +1,72 @@
-// --- Initial Data ---
-const defaultProducts = [
-    { id: 1, name: '60 شدة ببجي', price: 0.99, image: 'https://cdn.arabsstock.com/uploads/images/64102/image-64102-playing-pubg-mobile-middle-east-pubg-mobile-famous-electronic-thumbnail.jpg' },
-    { id: 2, name: '325 شدة ببجي', price: 4.99, image: 'https://cdn.arabsstock.com/uploads/images/64102/image-64102-playing-pubg-mobile-middle-east-pubg-mobile-famous-electronic-thumbnail.jpg' },
-    { id: 3, name: '100 جوهرة فري فاير', price: 0.99, image: 'https://esports.sa/wp-content/uploads/2023/12/Garena-Free-Fire-800x450.jpg' },
-    { id: 4, name: '530 جوهرة فري فاير', price: 4.99, image: 'https://esports.sa/wp-content/uploads/2023/12/Garena-Free-Fire-800x450.jpg' }
-];
+// --- Firebase Configuration ---
+const firebaseConfig = {
+    apiKey: "AIzaSyA3kU0Kn_qzeqpLG_tUBT2QhvI7YJmBQOE",
+    authDomain: "gx-store-671da.firebaseapp.com",
+    projectId: "gx-store-671da",
+    storageBucket: "gx-store-671da.firebasestorage.app",
+    messagingSenderId: "1077689403863",
+    appId: "1:1077689403863:web:8aaa0fa72ceae3fe036392",
+    measurementId: "G-FPH0HL5429"
+};
+
+// Initialize Firebase using the Compat mode (safe for file:// usage)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 // --- State ---
-let products = JSON.parse(localStorage.getItem('gx_products')) || defaultProducts;
+let products = [];
 let cart = JSON.parse(localStorage.getItem('gx_cart')) || [];
 
 // --- Initialization ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Save defaults if empty
-    if (!localStorage.getItem('gx_products')) {
-        localStorage.setItem('gx_products', JSON.stringify(products));
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check old cart format vs new Firebase ID strings
+    if (cart.length > 0 && typeof cart[0].id === 'number') {
+        cart = []; // Reset old localstorage array
+        saveCart();
     }
-    renderProducts();
+
+    await fetchProducts();
     updateCartIcon();
 });
+
+// --- Firebase Data Fetching ---
+async function fetchProducts() {
+    try {
+        const snapshot = await db.collection('products').get();
+        products = [];
+
+        if (snapshot.empty) {
+            // Seed initial products if DB is empty
+            const defaultProducts = [
+                { name: '60 شدة ببجي', price: 0.99, image: 'https://cdn.arabsstock.com/uploads/images/64102/image-64102-playing-pubg-mobile-middle-east-pubg-mobile-famous-electronic-thumbnail.jpg' },
+                { name: '325 شدة ببجي', price: 4.99, image: 'https://cdn.arabsstock.com/uploads/images/64102/image-64102-playing-pubg-mobile-middle-east-pubg-mobile-famous-electronic-thumbnail.jpg' },
+                { name: '100 جوهرة فري فاير', price: 0.99, image: 'https://esports.sa/wp-content/uploads/2023/12/Garena-Free-Fire-800x450.jpg' },
+                { name: '530 جوهرة فري فاير', price: 4.99, image: 'https://esports.sa/wp-content/uploads/2023/12/Garena-Free-Fire-800x450.jpg' }
+            ];
+
+            for (let dp of defaultProducts) {
+                const docRef = await db.collection('products').add(dp);
+                products.push({ id: docRef.id, ...dp });
+            }
+        } else {
+            snapshot.forEach(docSnap => {
+                products.push({ id: docSnap.id, ...docSnap.data() });
+            });
+        }
+
+        renderProducts();
+        if (document.getElementById('admin-panel-section') && document.getElementById('admin-panel-section').style.display === 'block') {
+            renderAdminProducts();
+        }
+    } catch (error) {
+        console.error("Error loading products from Firebase:", error);
+    }
+}
 
 // --- Navigation ---
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
     document.getElementById(`${pageId}-page`).classList.add('active');
-
-    // Smooth scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -34,8 +75,7 @@ function renderProducts() {
     const list = document.getElementById('products-list');
     list.innerHTML = '';
 
-    // Reverse products so newest appears first if added
-    const displayProducts = [...products].reverse();
+    const displayProducts = [...products].reverse(); // newest first
 
     displayProducts.forEach(prod => {
         const card = document.createElement('div');
@@ -44,7 +84,7 @@ function renderProducts() {
             <img src="${prod.image}" alt="${prod.name}" class="product-image" onerror="this.src='https://via.placeholder.com/250x150/151522/00ffcc?text=GX+STORE'">
             <h3 class="product-name">${prod.name}</h3>
             <div class="product-price">${prod.price} $</div>
-            <button class="add-to-cart" onclick="addToCart(${prod.id})">أضف للسلة <i class="fas fa-cart-plus"></i></button>
+            <button class="add-to-cart" onclick="addToCart('${prod.id}')">أضف للسلة <i class="fas fa-cart-plus"></i></button>
         `;
         list.appendChild(card);
     });
@@ -63,7 +103,6 @@ function addToCart(productId) {
         cart.push(product);
         saveCart();
         updateCartIcon();
-        // Visual feedback
         const countBadge = document.getElementById('cart-count');
         countBadge.style.transform = 'scale(1.5)';
         setTimeout(() => countBadge.style.transform = 'scale(1)', 200);
@@ -93,7 +132,7 @@ function renderCart() {
     cartItemsDiv.innerHTML = '';
 
     if (cart.length === 0) {
-        cartItemsDiv.innerHTML = '<p style="text-align:center; color: #a0a0b8; margin-top: 20px; font-size: 18px;">السلة فارغة الأنت</p>';
+        cartItemsDiv.innerHTML = '<p style="text-align:center; color: #a0a0b8; margin-top: 20px; font-size: 18px;">السلة فارغة</p>';
     } else {
         cart.forEach((item, index) => {
             total += parseFloat(item.price);
@@ -121,7 +160,6 @@ function checkout() {
     let message = "مرحباً GX STORE، أود طلب المنتجات التالية:%0a%0a";
     let total = 0;
 
-    // Grouping identical items
     const itemCounts = {};
     cart.forEach(item => {
         if (itemCounts[item.name]) {
@@ -139,8 +177,7 @@ function checkout() {
 
     message += `%0a*الإجمالي: ${total.toFixed(2)}$*`;
 
-    // Replace the URL with your WhatsApp URL and Number
-    const whatsappNumber = "201097173850"; // 01097173850 with Egypt code (2)
+    const whatsappNumber = "201097173850"; // Egypt format 010... -> 2010...
     const url = `https://wa.me/${whatsappNumber}?text=${message}`;
 
     window.open(url, '_blank');
@@ -151,7 +188,6 @@ function openAdminLogin() {
     document.getElementById('admin-modal').classList.add('active');
     document.getElementById('admin-error').style.display = 'none';
 
-    // Check if already logged in this session
     if (sessionStorage.getItem('gx_admin_logged')) {
         showAdminPanel();
     } else {
@@ -166,7 +202,6 @@ function closeAdminModal() {
 
 function checkAdminPassword() {
     const pswd = document.getElementById('admin-password').value;
-    // Password is '1357'
     if (pswd === '1357') {
         sessionStorage.setItem('gx_admin_logged', 'true');
         document.getElementById('admin-password').value = '';
@@ -200,21 +235,19 @@ function renderAdminProducts() {
                     <span style="font-weight: bold;">${prod.name} <br> <span style="font-size:14px; color:#00ffcc;">${prod.price}$</span></span>
                 </div>
                 <div class="admin-actions">
-                    <button class="edit-btn" onclick="editProduct(${prod.id})" title="تعديل"><i class="fas fa-edit"></i></button>
-                    <button class="delete-btn" onclick="deleteProduct(${prod.id})" title="حذف"><i class="fas fa-trash"></i></button>
+                    <button class="edit-btn" onclick="editProduct('${prod.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
+                    <button class="delete-btn" onclick="deleteProduct('${prod.id}')" title="حذف"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `;
     });
 }
 
-// File upload preview logic
 function previewImage(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function (e) {
-            // Compress the image down immediately
             resizeImage(e.target.result, 500, 500, function (resizedBase64) {
                 document.getElementById('image-preview').src = resizedBase64;
                 document.getElementById('image-preview-container').style.display = 'block';
@@ -225,14 +258,12 @@ function previewImage(event) {
     }
 }
 
-// Simple image resize using canvas to save LocalStorage quota
 function resizeImage(base64Str, maxWidth, maxHeight, callback) {
     const img = new Image();
     img.src = base64Str;
     img.onload = () => {
         let width = img.width;
         let height = img.height;
-
         if (width > height) {
             if (width > maxWidth) {
                 height *= maxWidth / width;
@@ -244,13 +275,11 @@ function resizeImage(base64Str, maxWidth, maxHeight, callback) {
                 height = maxHeight;
             }
         }
-
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        // Using JPEG format and a nice compression quality to save space
         callback(canvas.toDataURL('image/jpeg', 0.8));
     };
 }
@@ -269,45 +298,52 @@ function resetForm() {
     document.getElementById('save-product-btn').innerHTML = 'حفظ المنتج <i class="fas fa-save"></i>';
     document.getElementById('cancel-edit-btn').style.display = 'none';
     removeImage();
+
+    document.getElementById('save-product-btn').disabled = false;
 }
 
-function saveProduct(e) {
+async function saveProduct(e) {
     e.preventDefault();
+    document.getElementById('save-product-btn').disabled = true;
+
     const idInput = document.getElementById('product-id').value;
     const name = document.getElementById('product-name').value;
     const price = parseFloat(document.getElementById('product-price').value);
-
     let base64Image = document.getElementById('product-image-base64').value;
 
-    // Default fallback
     if (!base64Image) {
         base64Image = 'https://via.placeholder.com/250x150/151522/00ffcc?text=GX+STORE';
     }
 
-    if (idInput) {
-        // Edit existing
-        const index = products.findIndex(p => p.id == idInput);
-        if (index > -1) {
-            products[index] = { id: parseInt(idInput), name, price, image: base64Image };
-        }
-    } else {
-        // Add new
-        const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-        products.push({ id: newId, name, price, image: base64Image });
-    }
-
-    // Check local storage limits
     try {
-        localStorage.setItem('gx_products', JSON.stringify(products));
-    } catch (err) {
-        alert('مساحة التخزين غير كافية! يرجى حذف بعض المنتجات القديمة قبل إدراج صور أخرى.');
-        if (!idInput) products.pop(); // Remove the attempt if it was a new product
-        return;
-    }
+        if (idInput) {
+            // Edit existing in Firebase
+            await db.collection('products').doc(idInput).update({ name, price, image: base64Image });
 
-    resetForm();
-    renderAdminProducts();
-    renderProducts();
+            // Update local state
+            const index = products.findIndex(p => p.id === idInput);
+            if (index > -1) {
+                products[index] = { id: idInput, name, price, image: base64Image };
+
+                // Update specific cart items if needed
+                cart = cart.map(item => item.id === idInput ? { ...item, name, price, image: base64Image } : item);
+                saveCart();
+                updateCartIcon();
+            }
+        } else {
+            // Add new in Firebase
+            const docRef = await db.collection('products').add({ name, price, image: base64Image });
+            products.push({ id: docRef.id, name, price, image: base64Image });
+        }
+
+        resetForm();
+        renderAdminProducts();
+        renderProducts();
+    } catch (err) {
+        console.error("Error saving product to Firebase:", err);
+        alert('حدث خطأ أثناء حفظ المنتج.' + err.message);
+        document.getElementById('save-product-btn').disabled = false;
+    }
 }
 
 function editProduct(id) {
@@ -317,7 +353,6 @@ function editProduct(id) {
         document.getElementById('product-name').value = prod.name;
         document.getElementById('product-price').value = prod.price;
 
-        // Show existing image
         if (prod.image) {
             document.getElementById('product-image-base64').value = prod.image;
             document.getElementById('image-preview').src = prod.image;
@@ -329,19 +364,30 @@ function editProduct(id) {
         document.getElementById('form-title').innerText = 'تعديل المنتج';
         document.getElementById('save-product-btn').innerHTML = 'تحديث المنتج <i class="fas fa-check"></i>';
         document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+
+        document.getElementById('save-product-btn').disabled = false;
+        document.querySelector('.admin-form-container').scrollIntoView({ behavior: 'smooth' });
     }
 }
 
-function deleteProduct(id) {
-    if (confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) {
-        products = products.filter(p => p.id !== id);
-        localStorage.setItem('gx_products', JSON.stringify(products));
-        renderAdminProducts();
-        renderProducts();
+async function deleteProduct(id) {
+    if (confirm('هل أنت متأكد من حذف هذا المنتج نهائياً من قاعدة البيانات؟')) {
+        try {
+            // Delete from Firebase
+            await db.collection('products').doc(id).delete();
 
-        // Also remove instances from the cart
-        cart = cart.filter(item => item.id !== id);
-        saveCart();
-        updateCartIcon();
+            // Update locals
+            products = products.filter(p => p.id !== id);
+            cart = cart.filter(item => item.id !== id);
+
+            saveCart();
+            updateCartIcon();
+
+            renderAdminProducts();
+            renderProducts();
+        } catch (error) {
+            console.error("Error deleting product from Firebase:", error);
+            alert("فشل مسح المنتج.");
+        }
     }
 }
