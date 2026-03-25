@@ -791,6 +791,11 @@ footer {
     }
 }
 
+select option {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
 @media (max-width: 768px) {
 
     /* Navbar Mobile */

@@ -61,7 +61,13 @@
     </div>
     <!-- Products Page -->
     <div id="products-page" class="page">
-        <h2 class="section-title">بطاقات <span>الألعاب</span></h2>
+        <h2 class="section-title" id="products-section-title">التصنيفات و <span>المنتجات</span></h2>
+
+        <div class="categories-filter" id="categories-filter"
+            style="display: flex; gap: 15px; overflow-x: auto; margin-bottom: 30px; padding-bottom: 15px; justify-content: center;">
+            <!-- Categories will be injected here via JS -->
+        </div>
+
         <div class="products-container" id="products-list">
             <!-- Products will be injected here via JS -->
         </div>
@@ -76,7 +82,7 @@
             <!-- Cart items will be injected here -->
         </div>
         <div class="cart-footer">
-            <div class="total">الإجمالي: <span id="cart-total">0</span> $</div>
+            <div class="total">الإجمالي: <span id="cart-total">0</span> جنيه</div>
             <button class="whatsapp-btn" onclick="checkout()">
                 إتمام الطلب عبر واتساب <i class="fab fa-whatsapp"></i>
             </button>
@@ -96,59 +102,126 @@
 
             <div id="admin-panel-section" style="display: none;">
                 <div class="admin-header">
-                    <h3>لوحة تحكم المنتجات</h3>
+                    <h3>لوحة تحكم النظام</h3>
                     <button onclick="logoutAdmin()" class="admin-btn logout-btn-small" title="تسجيل الخروج"><i
                             class="fas fa-sign-out-alt"></i></button>
                 </div>
 
-                <div class="admin-dashboard">
-                    <!-- Form Section -->
-                    <div class="admin-form-container">
-                        <h4 id="form-title">إضافة منتج جديد</h4>
-                        <form id="product-form" onsubmit="saveProduct(event)">
-                            <input type="hidden" id="product-id">
+                <div class="admin-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button type="button" class="admin-btn" style="flex:1;" onclick="switchAdminTab('categories')"
+                        id="tab-btn-categories">التصنيفات</button>
+                    <button type="button" class="admin-btn"
+                        style="flex:1; background:transparent; border:1px solid var(--accent); color: white;"
+                        onclick="switchAdminTab('products')" id="tab-btn-products">المنتجات</button>
+                </div>
 
-                            <div class="input-group">
-                                <label>اسم المنتج</label>
-                                <input type="text" id="product-name" placeholder="مثال: 60 شدة ببجي" required>
-                            </div>
+                <div id="admin-categories-section">
+                    <div class="admin-dashboard">
+                        <div class="admin-form-container">
+                            <h4 id="cat-form-title">إضافة تصنيف جديد</h4>
+                            <form id="category-form" onsubmit="saveCategory(event)">
+                                <input type="hidden" id="category-id">
 
-                            <div class="input-group">
-                                <label>السعر ($)</label>
-                                <input type="number" id="product-price" placeholder="القيمة بالدولار" step="0.01"
-                                    required>
-                            </div>
-
-                            <div class="input-group">
-                                <label>صورة المنتج</label>
-                                <div class="file-upload-wrapper">
-                                    <input type="file" id="product-image-file" accept="image/*"
-                                        onchange="previewImage(event)">
-                                    <label for="product-image-file" class="file-upload-btn">
-                                        <i class="fas fa-cloud-upload-alt"></i> إختر صورة من الجهاز
-                                    </label>
+                                <div class="input-group">
+                                    <label>اسم التصنيف</label>
+                                    <input type="text" id="category-name" placeholder="مثال: شدات ببجي" required>
                                 </div>
-                                <div class="image-preview-container" id="image-preview-container" style="display:none;">
-                                    <img id="image-preview" src="" alt="Preview">
-                                    <button type="button" class="remove-image-btn" onclick="removeImage()">×</button>
-                                </div>
-                                <input type="hidden" id="product-image-base64">
-                            </div>
 
-                            <div class="form-actions">
-                                <button type="submit" class="admin-btn save-btn" id="save-product-btn">حفظ المنتج <i
-                                        class="fas fa-save"></i></button>
-                                <button type="button" class="admin-btn cancel-btn" id="cancel-edit-btn"
-                                    style="display:none;" onclick="resetForm()">إلغاء</button>
+                                <div class="input-group">
+                                    <label>صورة التصنيف</label>
+                                    <div class="file-upload-wrapper">
+                                        <input type="file" id="category-image-file" accept="image/*"
+                                            onchange="previewCatImage(event)">
+                                        <label for="category-image-file" class="file-upload-btn">
+                                            <i class="fas fa-cloud-upload-alt"></i> إختر صورة من الجهاز
+                                        </label>
+                                    </div>
+                                    <div class="image-preview-container" id="cat-image-preview-container"
+                                        style="display:none;">
+                                        <img id="cat-image-preview" src="" alt="Preview">
+                                        <button type="button" class="remove-image-btn"
+                                            onclick="removeCatImage()">×</button>
+                                    </div>
+                                    <input type="hidden" id="category-image-base64">
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="admin-btn save-btn" id="save-category-btn">حفظ التصنيف
+                                        <i class="fas fa-save"></i></button>
+                                    <button type="button" class="admin-btn cancel-btn" id="cancel-cat-edit-btn"
+                                        style="display:none;" onclick="resetCatForm()">إلغاء</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="admin-list-container">
+                            <h4>التصنيفات الحالية</h4>
+                            <div class="admin-products-list" id="admin-categories-list">
+                                <!-- Categories will be injected here -->
                             </div>
-                        </form>
+                        </div>
                     </div>
+                </div>
 
-                    <!-- List Section -->
-                    <div class="admin-list-container">
-                        <h4>المنتجات الحالية</h4>
-                        <div class="admin-products-list" id="admin-products-list">
-                            <!-- Products will be injected here -->
+                <div id="admin-products-section" style="display: none;">
+                    <div class="admin-dashboard">
+                        <!-- Form Section -->
+                        <div class="admin-form-container">
+                            <h4 id="form-title">إضافة منتج جديد</h4>
+                            <form id="product-form" onsubmit="saveProduct(event)">
+                                <input type="hidden" id="product-id">
+
+                                <div class="input-group">
+                                    <label>اسم المنتج</label>
+                                    <input type="text" id="product-name" placeholder="مثال: 60 شدة ببجي" required>
+                                </div>
+
+                                <div class="input-group">
+                                    <label>التصنيف</label>
+                                    <select id="product-category" required
+                                        style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background-color: rgba(0, 0, 0, 0.4); color: white; font-size: 16px;">
+                                        <option value="">اختر التصنيف...</option>
+                                    </select>
+                                </div>
+
+                                <div class="input-group">
+                                    <label>السعر (جنيه)</label>
+                                    <input type="number" id="product-price" placeholder="القيمة بالجنيه" step="0.01"
+                                        required>
+                                </div>
+
+                                <div class="input-group">
+                                    <label>صورة المنتج</label>
+                                    <div class="file-upload-wrapper">
+                                        <input type="file" id="product-image-file" accept="image/*"
+                                            onchange="previewImage(event)">
+                                        <label for="product-image-file" class="file-upload-btn">
+                                            <i class="fas fa-cloud-upload-alt"></i> إختر صورة من الجهاز
+                                        </label>
+                                    </div>
+                                    <div class="image-preview-container" id="image-preview-container"
+                                        style="display:none;">
+                                        <img id="image-preview" src="" alt="Preview">
+                                        <button type="button" class="remove-image-btn"
+                                            onclick="removeImage()">×</button>
+                                    </div>
+                                    <input type="hidden" id="product-image-base64">
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="admin-btn save-btn" id="save-product-btn">حفظ المنتج <i
+                                            class="fas fa-save"></i></button>
+                                    <button type="button" class="admin-btn cancel-btn" id="cancel-edit-btn"
+                                        style="display:none;" onclick="resetForm()">إلغاء</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- List Section -->
+                        <div class="admin-list-container">
+                            <h4>المنتجات الحالية</h4>
+                            <div class="admin-products-list" id="admin-products-list">
+                                <!-- Products will be injected here -->
+                            </div>
                         </div>
                     </div>
                 </div>
