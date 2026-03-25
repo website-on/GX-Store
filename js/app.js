@@ -18,6 +18,7 @@ let products = [];
 let categories = [];
 let cart = JSON.parse(localStorage.getItem('gx_cart')) || [];
 let selectedCategoryId = null; // for filtering products in UI
+let selectedSubcategoryId = null;
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -42,7 +43,9 @@ async function fetchCategories() {
             snapshot.forEach(docSnap => categories.push({ id: docSnap.id, ...docSnap.data() }));
         }
 
+        updateCategoryParentSelects();
         renderCategoriesFilter();
+        if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
         updateCategorySelects();
         if (document.getElementById('admin-panel-section') && document.getElementById('admin-panel-section').style.display === 'block') {
             renderAdminCategories();
@@ -85,25 +88,84 @@ function renderCategoriesFilter() {
     if (!filterContainer) return;
     filterContainer.innerHTML = '';
 
-    // "All" button
     const allBtn = document.createElement('button');
-    allBtn.className = 'admin-btn';
-    allBtn.style.cssText = selectedCategoryId === null
-        ? 'padding: 8px 15px; border-radius: 20px; flex-shrink: 0; background: var(--secondary-color); color: white;'
-        : 'padding: 8px 15px; border-radius: 20px; flex-shrink: 0; background: transparent; border: 1px solid var(--primary-color); color: white;';
+    allBtn.className = `category-pill ${selectedCategoryId === null ? 'active' : ''}`;
     allBtn.innerText = 'الكل';
-    allBtn.onclick = () => { selectedCategoryId = null; renderCategoriesFilter(); renderProducts(); };
+    allBtn.onclick = () => {
+        selectedCategoryId = null;
+        selectedSubcategoryId = null;
+        renderCategoriesFilter();
+        if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
+        renderProducts();
+    };
     filterContainer.appendChild(allBtn);
 
-    categories.forEach(cat => {
+    const mainCats = categories.filter(c => !c.parentId);
+
+    mainCats.forEach(cat => {
         const btn = document.createElement('button');
-        btn.className = 'admin-btn';
-        btn.style.cssText = selectedCategoryId === cat.id
-            ? 'padding: 8px 15px; border-radius: 20px; flex-shrink: 0; background: var(--secondary-color); color: white;'
-            : 'padding: 8px 15px; border-radius: 20px; flex-shrink: 0; background: transparent; border: 1px solid var(--primary-color); color: white;';
-        btn.innerHTML = `<img src="${cat.image}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-left:5px;"> ${cat.name}`;
-        btn.onclick = () => { selectedCategoryId = cat.id; renderCategoriesFilter(); renderProducts(); };
+        btn.className = `category-pill ${selectedCategoryId === cat.id ? 'active' : ''}`;
+        btn.innerHTML = `<img src="${cat.image}" style="width:24px; height:24px; border-radius:50%; vertical-align:middle; margin-left:5px;"> ${cat.name}`;
+        btn.onclick = () => {
+            selectedCategoryId = cat.id;
+            selectedSubcategoryId = null;
+            renderCategoriesFilter();
+            if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
+            renderProducts();
+        };
         filterContainer.appendChild(btn);
+    });
+}
+
+function renderSubcategoriesFilter() {
+    let subContainer = document.getElementById('subcategories-filter');
+    if (!subContainer) {
+        subContainer = document.createElement('div');
+        subContainer.id = 'subcategories-filter';
+        subContainer.className = 'categories-filter'; // use same scroll styles as categories filter if applicable
+        subContainer.style.cssText = 'display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; justify-content: center;';
+        const filterContainer = document.getElementById('categories-filter');
+        filterContainer.parentNode.insertBefore(subContainer, filterContainer.nextSibling);
+    }
+
+    subContainer.innerHTML = '';
+
+    if (!selectedCategoryId) {
+        subContainer.style.display = 'none';
+        return;
+    }
+
+    const subCats = categories.filter(c => c.parentId === selectedCategoryId);
+
+    if (subCats.length === 0) {
+        subContainer.style.display = 'none';
+        return;
+    }
+
+    subContainer.style.display = 'flex';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = `subcategory-pill ${selectedSubcategoryId === null ? 'active' : ''}`;
+    allBtn.innerText = 'الكل';
+    allBtn.onclick = () => {
+        selectedSubcategoryId = null;
+        renderSubcategoriesFilter();
+        renderProducts();
+    };
+    subContainer.appendChild(allBtn);
+
+    subCats.forEach(sub => {
+        const btn = document.createElement('button');
+        btn.className = `subcategory-pill ${selectedSubcategoryId === sub.id ? 'active' : ''}`;
+
+        const imgHtml = sub.image ? `<img src="${sub.image}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-left:5px;">` : '';
+        btn.innerHTML = `${imgHtml} ${sub.name}`;
+        btn.onclick = () => {
+            selectedSubcategoryId = sub.id;
+            renderSubcategoriesFilter();
+            renderProducts();
+        };
+        subContainer.appendChild(btn);
     });
 }
 
@@ -111,9 +173,38 @@ function renderProducts() {
     const list = document.getElementById('products-list');
     list.innerHTML = '';
 
+    // If main category is selected and it has subcategories, and NO subcategory is selected:
+    const subCats = selectedCategoryId ? categories.filter(c => c.parentId === selectedCategoryId) : [];
+    if (selectedCategoryId && !selectedSubcategoryId && subCats.length > 0) {
+        // Option 1: Show a message to select a subcategory (Wait, the user requested to see subcategories when main is clicked)
+        // Option 2: Fallback to showing all products of all internal categories (Wait, user says "عند النقر على تصنيف داخلي تظهر المنتجات", which means products show when subcategory clicked).
+        // Let's show a prompt to select subcategory
+        list.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(0,0,0,0.3); border-radius: 20px; border: 1px dashed var(--primary-color);">
+                <i class="fas fa-hand-pointer" style="font-size: 50px; color: var(--primary-color); margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--primary-color));"></i>
+                <h3 style="font-size: 26px; color: white;">يرجى إختيار تصنيف داخلي لتصفح المنتجات</h3>
+                <p style="color: var(--text-muted); margin-top: 10px;">التصنيفات الداخلية متوفرة في الأعلى تحت التصنيف الأساسي</p>
+            </div>
+        `;
+        return;
+    }
+
     let filterProducts = products;
-    if (selectedCategoryId) {
+    if (selectedSubcategoryId) {
+        filterProducts = products.filter(p => p.categoryId === selectedSubcategoryId);
+    } else if (selectedCategoryId) {
+        // Just show products assigned to this main category
         filterProducts = products.filter(p => p.categoryId === selectedCategoryId);
+    }
+
+    if (filterProducts.length === 0) {
+        list.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(0,0,0,0.3); border-radius: 20px; border: 1px dashed rgba(255,0,85, 0.5);">
+                <i class="fas fa-box-open" style="font-size: 50px; color: var(--secondary-color); margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--secondary-color));"></i>
+                <h3 style="font-size: 26px; color: white;">لا يوجد منتجات في هذا التصنيف حالياً</h3>
+            </div>
+        `;
+        return;
     }
 
     const displayProducts = [...filterProducts].reverse(); // newest first
@@ -463,7 +554,16 @@ async function deleteProduct(id) {
     }
 }
 
-// --- Administrator Categories Logic ---
+function updateCategoryParentSelects() {
+    const select = document.getElementById('category-parent');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">هذا تصنيف عام</option>';
+    categories.filter(c => !c.parentId).forEach(cat => {
+        select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+    });
+    if (currentVal) select.value = currentVal;
+}
 
 function updateCategorySelects() {
     const select = document.getElementById('product-category');
@@ -473,8 +573,14 @@ function updateCategorySelects() {
     const currentVal = select.value;
 
     select.innerHTML = '<option value="">اختر التصنيف...</option>';
-    categories.forEach(cat => {
-        select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+
+    const mainCats = categories.filter(c => !c.parentId);
+    mainCats.forEach(main => {
+        select.innerHTML += `<option value="${main.id}" style="font-weight:bold;">${main.name}</option>`;
+        const subCats = categories.filter(c => c.parentId === main.id);
+        subCats.forEach(sub => {
+            select.innerHTML += `<option value="${sub.id}">&nbsp;&nbsp;&nbsp;-- ${sub.name}</option>`;
+        });
     });
 
     if (currentVal) select.value = currentVal;
@@ -486,11 +592,19 @@ function renderAdminCategories() {
     list.innerHTML = '';
 
     categories.forEach(cat => {
+        let parentNameInfo = "";
+        if (cat.parentId) {
+            const parentCat = categories.find(c => c.id === cat.parentId);
+            if (parentCat) {
+                parentNameInfo = `<br><span style="font-size:12px; color:#00ffcc;">تصنيف داخلي لـ: ${parentCat.name}</span>`;
+            }
+        }
+
         list.innerHTML += `
             <div class="admin-product-item">
                 <div class="admin-prod-info">
                     <img src="${cat.image}" class="admin-prod-img" onerror="this.src='https://via.placeholder.com/50/151522/00ffcc?text=CAT'">
-                    <span style="font-weight: bold;">${cat.name}</span>
+                    <span style="font-weight: bold;">${cat.name} ${parentNameInfo}</span>
                 </div>
                 <div class="admin-actions">
                     <button class="edit-btn" onclick="editCategory('${cat.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
@@ -537,6 +651,9 @@ function resetCatForm() {
     const idInput = document.getElementById('category-id');
     if (idInput) idInput.value = '';
 
+    const parentSelect = document.getElementById('category-parent');
+    if (parentSelect) parentSelect.value = '';
+
     const title = document.getElementById('cat-form-title');
     if (title) title.innerText = 'إضافة تصنيف جديد';
 
@@ -560,25 +677,30 @@ async function saveCategory(e) {
     const name = document.getElementById('category-name').value;
     let base64Image = document.getElementById('category-image-base64').value;
 
+    const parentSelect = document.getElementById('category-parent');
+    const parentId = parentSelect && parentSelect.value ? parentSelect.value : null;
+
     if (!base64Image) {
         base64Image = 'https://via.placeholder.com/150/151522/00ffcc?text=CAT';
     }
 
     try {
         if (idInput) {
-            await db.collection('categories').doc(idInput).update({ name, image: base64Image });
+            await db.collection('categories').doc(idInput).update({ name, image: base64Image, parentId });
             const index = categories.findIndex(c => c.id === idInput);
             if (index > -1) {
-                categories[index] = { id: idInput, name, image: base64Image };
+                categories[index] = { id: idInput, name, image: base64Image, parentId };
             }
         } else {
-            const docRef = await db.collection('categories').add({ name, image: base64Image });
-            categories.push({ id: docRef.id, name, image: base64Image });
+            const docRef = await db.collection('categories').add({ name, image: base64Image, parentId });
+            categories.push({ id: docRef.id, name, image: base64Image, parentId });
         }
 
         resetCatForm();
+        updateCategoryParentSelects();
         renderAdminCategories();
         renderCategoriesFilter();
+        if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
         updateCategorySelects();
     } catch (err) {
         console.error("Error saving category to Firebase:", err);
@@ -592,6 +714,11 @@ function editCategory(id) {
     if (cat) {
         document.getElementById('category-id').value = cat.id;
         document.getElementById('category-name').value = cat.name;
+
+        const parentSelect = document.getElementById('category-parent');
+        if (parentSelect) {
+            parentSelect.value = cat.parentId || '';
+        }
 
         if (cat.image) {
             document.getElementById('category-image-base64').value = cat.image;
@@ -618,6 +745,13 @@ async function deleteCategory(id) {
         return;
     }
 
+    // Check if it has subcategories
+    const hasSubcategories = categories.some(c => c.parentId === id);
+    if (hasSubcategories) {
+        alert("لا يمكن حذف هذا التصنيف لأن هناك تصنيفات داخلية تابعة له. يرجى حذفها أو تعديلها أولاً.");
+        return;
+    }
+
     if (confirm('هل أنت متأكد من حذف هذا التصنيف نهائياً؟')) {
         try {
             await db.collection('categories').doc(id).delete();
@@ -625,10 +759,15 @@ async function deleteCategory(id) {
 
             if (selectedCategoryId === id) {
                 selectedCategoryId = null;
+                selectedSubcategoryId = null;
+            } else if (selectedSubcategoryId === id) {
+                selectedSubcategoryId = null;
             }
 
+            updateCategoryParentSelects();
             renderAdminCategories();
             renderCategoriesFilter();
+            if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
             updateCategorySelects();
             renderProducts();
         } catch (error) {
