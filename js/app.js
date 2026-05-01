@@ -82,37 +82,52 @@ function showPage(pageId) {
 }
 
 // --- Render Products ---
+window.goBackToGames = function () {
+    selectedCategoryId = null;
+    selectedSubcategoryId = null;
+
+    // Explicitly show the games grid container if it was hidden
+    const filterContainer = document.getElementById('categories-filter');
+    if (filterContainer) filterContainer.style.display = '';
+
+    renderCategoriesFilter();
+    if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
+    renderProducts();
+};
+
 function renderCategoriesFilter() {
     const filterContainer = document.getElementById('categories-filter');
     if (!filterContainer) return;
     filterContainer.innerHTML = '';
 
-    const allBtn = document.createElement('button');
-    allBtn.className = `category-pill ${selectedCategoryId === null ? 'active' : ''}`;
-    allBtn.innerText = 'الكل';
-    allBtn.onclick = () => {
-        selectedCategoryId = null;
-        selectedSubcategoryId = null;
-        renderCategoriesFilter();
-        if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
-        renderProducts();
-    };
-    filterContainer.appendChild(allBtn);
+    if (selectedCategoryId !== null) {
+        filterContainer.style.display = 'none';
+        return;
+    }
+
+    // Grid mode
+    filterContainer.style.display = '';
+    filterContainer.className = 'games-grid';
 
     const mainCats = categories.filter(c => !c.parentId);
 
     mainCats.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = `category-pill ${selectedCategoryId === cat.id ? 'active' : ''}`;
-        btn.innerHTML = `<img src="${cat.image}" style="width:24px; height:24px; border-radius:50%; vertical-align:middle; margin-left:5px;"> ${cat.name}`;
-        btn.onclick = () => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.onclick = () => {
             selectedCategoryId = cat.id;
             selectedSubcategoryId = null;
             renderCategoriesFilter();
             if (typeof renderSubcategoriesFilter === 'function') renderSubcategoriesFilter();
             renderProducts();
         };
-        filterContainer.appendChild(btn);
+        card.innerHTML = `
+            <img src="${cat.image}" alt="${cat.name}" onerror="this.src='https://via.placeholder.com/300x200/151522/00ffcc?text=MZN'">
+            <div class="game-card-overlay">
+                <div class="game-card-title">${cat.name}</div>
+            </div>
+        `;
+        filterContainer.appendChild(card);
     });
 }
 
@@ -172,13 +187,27 @@ function renderProducts() {
     const list = document.getElementById('products-list');
     list.innerHTML = '';
 
+    if (selectedCategoryId === null) {
+        list.style.display = 'none';
+        return;
+    } else {
+        list.style.display = 'grid';
+    }
+
+    const backBtnContainer = document.createElement('div');
+    backBtnContainer.style.gridColumn = '1 / -1';
+    backBtnContainer.style.marginBottom = '20px';
+    backBtnContainer.innerHTML = `
+        <button class="category-pill active" onclick="goBackToGames()" style="display:inline-flex; width:auto; border-radius:10px; font-family:'Tajawal',sans-serif; background:rgba(0,255,204,0.1); border:1px solid var(--primary-color); color:var(--primary-color); box-shadow:none;">
+            <i class="fas fa-arrow-right" style="margin-left:8px;"></i> العودة لقائمة الألعاب
+        </button>
+    `;
+    list.appendChild(backBtnContainer);
+
     // If main category is selected and it has subcategories, and NO subcategory is selected:
     const subCats = selectedCategoryId ? categories.filter(c => c.parentId === selectedCategoryId) : [];
     if (selectedCategoryId && !selectedSubcategoryId && subCats.length > 0) {
-        // Option 1: Show a message to select a subcategory (Wait, the user requested to see subcategories when main is clicked)
-        // Option 2: Fallback to showing all products of all internal categories (Wait, user says "عند النقر على تصنيف داخلي تظهر المنتجات", which means products show when subcategory clicked).
-        // Let's show a prompt to select subcategory
-        list.innerHTML = `
+        list.innerHTML += `
             <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(0,0,0,0.3); border-radius: 20px; border: 1px dashed var(--primary-color);">
                 <i class="fas fa-hand-pointer" style="font-size: 50px; color: var(--primary-color); margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--primary-color));"></i>
                 <h3 style="font-size: 26px; color: white;">يرجى إختيار تصنيف داخلي لتصفح المنتجات</h3>
@@ -197,7 +226,7 @@ function renderProducts() {
     }
 
     if (filterProducts.length === 0) {
-        list.innerHTML = `
+        list.innerHTML += `
             <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(0,0,0,0.3); border-radius: 20px; border: 1px dashed rgba(255,0,85, 0.5);">
                 <i class="fas fa-box-open" style="font-size: 50px; color: var(--secondary-color); margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--secondary-color));"></i>
                 <h3 style="font-size: 26px; color: white;">لا يوجد منتجات في هذا التصنيف حالياً</h3>
@@ -212,7 +241,7 @@ function renderProducts() {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
-            <img src="${prod.image}" alt="${prod.name}" class="product-image" onerror="this.src='https://via.placeholder.com/250x150/151522/00ffcc?text=GX+STORE'">
+            <img src="${prod.image}" alt="${prod.name}" class="product-image" onerror="this.src='https://via.placeholder.com/250x150/151522/00ffcc?text=MZN+STORE'">
             <h3 class="product-name">${prod.name}</h3>
             <div class="product-price">${prod.price} جنيه</div>
             <button class="add-to-cart" onclick="addToCart('${prod.id}')">أضف للسلة <i class="fas fa-cart-plus"></i></button>
@@ -305,7 +334,7 @@ function closePaymentModal() {
 }
 
 function confirmPayment() {
-    let message = "مرحباً GX STORE، أود طلب المنتجات التالية:%0a%0a";
+    let message = "مرحباً MZN STORE، أود طلب المنتجات التالية:%0a%0a";
     let total = 0;
 
     const itemCounts = {};
@@ -409,7 +438,7 @@ function renderAdminProducts() {
         list.innerHTML += `
             <div class="admin-product-item">
                 <div class="admin-prod-info">
-                    <img src="${prod.image}" class="admin-prod-img" onerror="this.src='https://via.placeholder.com/50/151522/00ffcc?text=GX'">
+                    <img src="${prod.image}" class="admin-prod-img" onerror="this.src='https://via.placeholder.com/50/151522/00ffcc?text=MZN'">
                     <span style="font-weight: bold;">${prod.name} <br> <span style="font-size:14px; color:#00ffcc;">${prod.price} جنيه</span></span>
                 </div>
                 <div class="admin-actions">
@@ -498,7 +527,7 @@ async function saveProduct(e) {
     }
 
     if (!base64Image) {
-        base64Image = 'https://via.placeholder.com/250x150/151522/00ffcc?text=GX+STORE';
+        base64Image = 'https://via.placeholder.com/250x150/151522/00ffcc?text=MZN+STORE';
     }
 
     try {

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GX Store</title>
+    <title>MZN Store</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,7 +14,7 @@
 <body>
     <!-- Navigation -->
     <nav>
-        <div class="logo">GX <span>STORE</span></div>
+        <div class="logo">MZN <span>STORE</span></div>
         <ul class="nav-links">
             <li><a href="#" onclick="showPage('home')"><i class="fas fa-home"></i> الرئيسية</a></li>
             <li><a href="#" onclick="showPage('products')"><i class="fas fa-gamepad"></i> المنتجات</a></li>
@@ -30,7 +30,7 @@
     <div id="home-page" class="page active">
         <header class="hero">
             <div class="hero-content">
-                <h1>مرحباً بك في <span>GX STORE</span></h1>
+                <h1>مرحباً بك في <span>MZN STORE</span></h1>
                 <p>وجهتك الأولى والموثوقة لشحن العملات الرقمية لجميع ألعابك المفضلة (شدات ببجي، جواهر فري فاير،
                     والمزيد).<br><br> نقدم لك سرعة في التنفيذ، أسعار تنافسية، وضمان كامل لأمان حسابك. انطلق الآن وتفوق
                     في لعبتك!</p>
@@ -61,10 +61,12 @@
     </div>
     <!-- Products Page -->
     <div id="products-page" class="page">
-        <h2 class="section-title" id="products-section-title">التصنيفات و <span>المنتجات</span></h2>
+        <!-- Banner as requested -->
+        <div class="products-header-banner">
+            <h2>تصفح المنتجات</h2>
+        </div>
 
-        <div class="categories-filter" id="categories-filter"
-            style="display: flex; gap: 15px; overflow-x: auto; margin-bottom: 30px; padding-bottom: 15px; justify-content: center;">
+        <div id="categories-filter">
             <!-- Categories will be injected here via JS -->
         </div>
 
@@ -284,7 +286,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 GX STORE. جميع الحقوق محفوظة.</p>
+        <p>&copy; 2026 MZN STORE. جميع الحقوق محفوظة.</p>
     </footer>
     <!-- Firebase Sync Compat Libraries -->
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
