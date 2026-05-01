@@ -1,12 +1,11 @@
 // --- Firebase Configuration ---
 const firebaseConfig = {
-    apiKey: "AIzaSyA3kU0Kn_qzeqpLG_tUBT2QhvI7YJmBQOE",
-    authDomain: "gx-store-671da.firebaseapp.com",
-    projectId: "gx-store-671da",
-    storageBucket: "gx-store-671da.firebasestorage.app",
-    messagingSenderId: "1077689403863",
-    appId: "1:1077689403863:web:8aaa0fa72ceae3fe036392",
-    measurementId: "G-FPH0HL5429"
+    apiKey: "AIzaSyCneD7lvZXCE6088oUmAqPFci2Ec7ZG2tw",
+    authDomain: "real-gxstore.firebaseapp.com",
+    projectId: "real-gxstore",
+    storageBucket: "real-gxstore.firebasestorage.app",
+    messagingSenderId: "735192189968",
+    appId: "1:735192189968:web:4a9ca5e5e0353b06ba8e95"
 };
 
 // Initialize Firebase using the Compat mode (safe for file:// usage)
@@ -289,6 +288,23 @@ function checkout() {
         return;
     }
 
+    showPaymentModal();
+}
+
+function showPaymentModal() {
+    const paymentModal = document.getElementById('payment-modal');
+    paymentModal.classList.add('active');
+
+    let total = 0;
+    cart.forEach(item => total += parseFloat(item.price));
+    document.getElementById('payment-total').innerText = total.toFixed(2);
+}
+
+function closePaymentModal() {
+    document.getElementById('payment-modal').classList.remove('active');
+}
+
+function confirmPayment() {
     let message = "مرحباً GX STORE، أود طلب المنتجات التالية:%0a%0a";
     let total = 0;
 
@@ -307,12 +323,21 @@ function checkout() {
         total += info.total;
     }
 
-    message += `%0a*الإجمالي: ${total.toFixed(2)} جنيه*`;
+    message += `%0a*الإجمالي: ${total.toFixed(2)} جنيه*%0a%0a`;
+    message += `لقد قمت بتحويل المبلغ عبر فودافون كاش، ومرفق صورة التحويل.`;
 
-    const whatsappNumber = "201097173850"; // Egypt format 010... -> 2010...
+    const whatsappNumber = "201097173850"; // Egypt format 2010...
     const url = `https://wa.me/${whatsappNumber}?text=${message}`;
 
     window.open(url, '_blank');
+    closePaymentModal();
+}
+
+function copyNumber() {
+    const num = document.getElementById('vf-number').innerText;
+    navigator.clipboard.writeText(num).then(() => {
+        alert("تم نسخ الرقم بنجاح!");
+    });
 }
 
 // --- Admin Logic ---
@@ -481,12 +506,9 @@ async function saveProduct(e) {
             // Edit existing in Firebase
             await db.collection('products').doc(idInput).update({ name, price, image: base64Image, categoryId });
 
-            // Update local state
             const index = products.findIndex(p => p.id === idInput);
             if (index > -1) {
                 products[index] = { id: idInput, name, price, image: base64Image, categoryId };
-
-                // Update specific cart items if needed
                 cart = cart.map(item => item.id === idInput ? { ...item, name, price, image: base64Image, categoryId } : item);
                 saveCart();
                 updateCartIcon();
@@ -538,7 +560,6 @@ async function deleteProduct(id) {
             // Delete from Firebase
             await db.collection('products').doc(id).delete();
 
-            // Update locals
             products = products.filter(p => p.id !== id);
             cart = cart.filter(item => item.id !== id);
 
@@ -771,7 +792,7 @@ async function deleteCategory(id) {
             updateCategorySelects();
             renderProducts();
         } catch (error) {
-            console.error("Error deleting category:", error);
+            console.error("Error deleting category to Firebase:", error);
             alert("فشل مسح التصنيف.");
         }
     }

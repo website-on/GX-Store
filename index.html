@@ -83,8 +83,8 @@
         </div>
         <div class="cart-footer">
             <div class="total">الإجمالي: <span id="cart-total">0</span> جنيه</div>
-            <button class="whatsapp-btn" onclick="checkout()">
-                إتمام الطلب عبر واتساب <i class="fab fa-whatsapp"></i>
+            <button class="btn-checkout" onclick="checkout()">
+                متابعة الدفع <i class="fas fa-credit-card"></i>
             </button>
         </div>
     </div>
@@ -236,6 +236,52 @@
             </div>
         </div>
     </div>
+
+    <!-- Payment Modal -->
+    <div class="modal" id="payment-modal">
+        <div class="modal-content payment-content">
+            <span class="close-btn" onclick="closePaymentModal()">&times;</span>
+            <div class="payment-header">
+                <h3><i class="fas fa-wallet"></i> إتمام الدفع</h3>
+            </div>
+
+            <div class="payment-body">
+                <div class="payment-method">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Vodafone_logo.svg/100px-Vodafone_logo.svg.png"
+                        alt="Vodafone Cash" style="width: 70px; margin-bottom: 15px;">
+                    <h4>الدفع عبر فودافون كاش</h4>
+                    <p>يرجى تحويل مبلغ <strong id="payment-total"
+                            style="color: var(--primary-color); font-size: 24px;">0</strong> <strong
+                            style="font-size: 20px;">جنيه</strong> إلى الرقم التالي:</p>
+                    <div class="phone-number" onclick="copyNumber()" title="إضغط لنسخ الرقم">
+                        <span id="vf-number">01097173850</span>
+                        <i class="fas fa-copy"></i>
+                    </div>
+                </div>
+
+                <div class="payment-instructions">
+                    <ol>
+                        <li>قم بتحويل المبلغ المطلوب إلى الرقم الموضح أعلاه.</li>
+                        <li>التقط صورة (سكرين شوت) لإشعار التحويل بنجاح.</li>
+                        <li>اضغط على الزر بالأسفل لإرسال تفاصيل الطلب وصورة التحويل عبر واتساب ليتم تنفيذ طلبك
+                            فوراً.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="whatsapp-btn payment-confirm-btn" onclick="confirmPayment()">
+                    إرسال إثبات التحويل عبر واتساب <i class="fab fa-whatsapp" style="font-size: 24px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating WhatsApp -->
+    <a href="https://wa.me/201097173850" class="floating-whatsapp" target="_blank" title="تواصل معنا عبر واتساب">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
     <!-- Footer -->
     <footer>
         <p>&copy; 2026 GX STORE. جميع الحقوق محفوظة.</p>
